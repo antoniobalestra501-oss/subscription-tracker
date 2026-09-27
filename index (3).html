@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Subscription Tracker</title>
+<style>
+  /* =====================================================
+     COLORS AND BASE STYLES
+     ===================================================== */
+  :root {
+    --bg: #f3f5f4;
+    --surface: #ffffff;
+    --surface-soft: #f8faf9;
+    --border: #e1e7e4;
+    --border-strong: #cbd5d0;
+    --text: #17231f;
+    --muted: #5e6c67;
+    --faint: #87948f;
+    --accent: #1e6b52;
+    --accent-hover: #175641;
+    --accent-soft: #e8f1ed;
+    --accent-line: #c6ddd3;
+    --danger: #b3261e;
+    --danger-soft: #fcecea;
+    --danger-line: #f1bdb8;
+    --radius-large: 16px;
+    --radius: 12px;
+    --radius-small: 8px;
+    --shadow: 0 1px 2px rgba(23, 35, 31, 0.04), 0 6px 20px rgba(23, 35, 31, 0.05);
+    --accent-text: #1e6b52;
+    --on-accent: #ffffff;
+    --input-bg: #ffffff;
+    --track: #edf1ef;
+    --toast-bg: #17231f;
+    --toast-text: #ffffff;
+  }
+
+  /* Dark theme (used when the viewer or computer is set to dark mode) */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111816;
+      --surface: #18211e;
+      --surface-soft: #1d2723;
+      --border: #2a3632;
+      --border-strong: #3a4843;
+      --text: #e6eeea;
+      --muted: #a3b2ac;
+      --faint: #859690;
+      --accent: #1e7a5c;
+      --accent-hover: #248a69;
+      --accent-soft: #1b3a2f;
+      --accent-line: #2c5646;
+      --accent-text: #6fcba6;
+      --danger: #f08a80;
+      --danger-soft: #3a1f1c;
+      --danger-line: #6b3530;
+      --input-bg: #141c19;
+      --track: #2a3632;
+      --toast-bg: #e6eeea;
+      --toast-text: #111816;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #111816;
+    --surface: #18211e;
+    --surface-soft: #1d2723;
+    --border: #2a3632;
+    --border-strong: #3a4843;
+    --text: #e6eeea;
+    --muted: #a3b2ac;
+    --faint: #859690;
+    --accent: #1e7a5c;
+    --accent-hover: #248a69;
+    --accent-soft: #1b3a2f;
+    --accent-line: #2c5646;
+    --accent-text: #6fcba6;
+    --danger: #f08a80;
+    --danger-soft: #3a1f1c;
+    --danger-line: #6b3530;
+    --input-bg: #141c19;
+    --track: #2a3632;
+    --toast-bg: #e6eeea;
+    --toast-text: #111816;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Keep content clear of phone notches and system bars */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+  * { box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 56px;
+  }
+
+  /* Every money amount uses evenly spaced digits so columns line up */
+  .money, .stat-value, .savings-value, td.num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(30, 107, 82, 0.35);
+    outline-offset: 2px;
+  }
+
+  /* =====================================================
+     HEADER
+     ===================================================== */
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: var(--accent);
+    color: var(--on-accent);
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 1.85rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .brand p {
+    margin: 2px 0 0;
+    color: var(--muted);
+  }
+
+  /* =====================================================
+     BUTTONS
+     ===================================================== */
+  .btn {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-secondary {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+
+  .btn-secondary:hover { background: var(--surface-soft); }
+
+  .btn-reset {
+    background: transparent;
+    border-color: var(--border-strong);
+    color: var(--muted);
+    font-size: 0.875rem;
+    padding: 6px 12px;
+    border-radius: var(--radius-small);
+  }
+
+  .btn-reset:hover {
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .btn-remove {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: var(--radius-small);
+  }
+
+  .btn-remove:hover {
+    color: var(--danger);
+    background: var(--danger-soft);
+    border-color: var(--danger-line);
+  }
+
+  /* =====================================================
+     DASHBOARD STATS
+     ===================================================== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-large);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .stat-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .stat-value {
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+  }
+
+  .stat-note {
+    font-size: 0.875rem;
+    color: var(--faint);
+    margin-top: 6px;
+  }
+
+  .stat-primary .stat-label { color: rgba(255, 255, 255, 0.85); }
+  .stat-primary .stat-note { color: rgba(255, 255, 255, 0.7); }
+
+  /* =====================================================
+     CARDS AND LAYOUT
+     ===================================================== */
+  .main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-large);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .card-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+  }
+
+  .card-header p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.925rem;
+  }
+
+  /* =====================================================
+     ADD SUBSCRIPTION FORM
+     ===================================================== */
+  .add-form {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 22px;
+  }
+
+  .form-title {
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1.3fr 1fr 1.1fr;
+    gap: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .field select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 36px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235e6c67' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+  }
+
+  .field select:disabled {
+    cursor: not-allowed;
+    color: var(--faint);
+    background-color: var(--surface-soft);
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(30, 107, 82, 0.15);
+  }
+
+  .field input.invalid,
+  .field select.invalid {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.12);
+  }
+
+  .cost-input { position: relative; }
+
+  .cost-input span {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .field .cost-input input { padding-left: 26px; }
+
+  .form-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .form-error {
+    color: var(--danger);
+    background: var(--danger-soft);
+    border: 1px solid var(--danger-line);
+    border-radius: var(--radius-small);
+    padding: 8px 12px;
+    font-size: 0.925rem;
+    font-weight: 500;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  /* =====================================================
+     SUBSCRIPTION TABLE
+     ===================================================== */
+  .table-wrap { overflow-x: auto; }
+
+  .sub-table {
+    width: 100%;
+    min-width: 580px;
+    border-collapse: collapse;
+  }
+
+  .sub-table th {
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--faint);
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sub-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .sub-table th:first-child,
+  .sub-table td:first-child { padding-left: 4px; }
+
+  .sub-table th:last-child,
+  .sub-table td:last-child { padding-right: 4px; text-align: right; }
+
+  .sub-table tbody tr:hover { background: var(--surface-soft); }
+
+  .sub-table .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .sub-name {
+    font-weight: 600;
+    font-size: 1.02rem;
+  }
+
+  .tag {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .billing-type { font-weight: 500; }
+
+  .small-muted {
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .amount { font-weight: 600; }
+
+  .per {
+    color: var(--faint);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .sub-table tfoot td {
+    border-bottom: none;
+    padding-top: 16px;
+    font-weight: 700;
+  }
+
+  /* =====================================================
+     EMPTY STATES
+     ===================================================== */
+  .empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--muted);
+  }
+
+  .empty-state strong {
+    display: block;
+    color: var(--text);
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+
+  .empty-state .btn { margin-top: 16px; }
+
+  .empty-small {
+    color: var(--muted);
+    padding: 12px 0;
+  }
+
+  /* =====================================================
+     CATEGORY BARS
+     ===================================================== */
+  .category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .category-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+
+  .category-name { font-weight: 600; }
+  .category-amount { font-weight: 600; }
+
+  .bar-track {
+    height: 12px;
+    background: var(--track);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+  }
+
+  .largest {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.925rem;
+  }
+
+  .largest strong { color: var(--text); }
+
+  /* =====================================================
+     SAVINGS CALCULATOR
+     ===================================================== */
+  .savings-body {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .savings-note {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .savings-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .savings-tile {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .savings-tile.highlight {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+  }
+
+  .savings-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .savings-value {
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-top: 6px;
+  }
+
+  .savings-tile.highlight .savings-value { color: var(--accent-text); }
+
+  .savings-period {
+    color: var(--faint);
+    font-size: 0.875rem;
+  }
+
+  /* =====================================================
+     MESSAGE POP-UP (replaces Python's print messages)
+     ===================================================== */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 16px);
+    max-width: calc(100% - 32px);
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    box-shadow: 0 8px 24px rgba(23, 35, 31, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .app-footer {
+    text-align: center;
+    color: var(--faint);
+    font-size: 0.85rem;
+    margin-top: 32px;
+  }
+
+  /* =====================================================
+     SMALLER SCREENS
+     ===================================================== */
+  @media (max-width: 980px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .savings-body { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 680px) {
+    .page { padding: 22px 16px 48px; }
+    .stats { grid-template-columns: 1fr; gap: 14px; }
+    .stat-value { font-size: 2.1rem; }
+    .savings-tiles { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+    .card-header { flex-direction: column; }
+    .brand h1 { font-size: 1.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">S</div>
+      <div>
+        <h1>Subscription Tracker</h1>
+        <p>Know what your subscriptions are really costing you.</p>
+      </div>
+    </div>
+    <button type="button" id="resetDemoButton" class="btn btn-reset">Reset Demo</button>
+  </header>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section class="stats" aria-label="Spending overview">
+    <div class="stat stat-primary">
+      <div class="stat-label">Monthly Spending</div>
+      <div class="stat-value" id="monthlyTotal">$0.00</div>
+      <div class="stat-note">Equivalent cost per month</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Annual Spending</div>
+      <div class="stat-value" id="yearlyTotal">$0.00</div>
+      <div class="stat-note">Total cost per year</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Active Subscriptions</div>
+      <div class="stat-value" id="activeCount">0</div>
+      <div class="stat-note">Recurring expenses tracked</div>
+    </div>
+  </section>
+
+  <div class="main-grid">
+
+    <!-- ===================== YOUR SUBSCRIPTIONS ===================== -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Your Subscriptions</h2>
+          <p>Each recurring expense converted to its monthly and annual cost.</p>
+        </div>
+        <button type="button" id="toggleFormButton" class="btn btn-primary"
+                aria-expanded="false" aria-controls="addForm">
+          + Add Subscription
+        </button>
+      </div>
+
+      <!-- Add Subscription form (Python: add_subscription) -->
+      <form id="addForm" class="add-form" hidden novalidate>
+        <div class="form-title">New subscription</div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="nameInput">Subscription Name</label>
+            <input id="nameInput" type="text" placeholder="e.g. Netflix" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="categoryInput">Category</label>
+            <select id="categoryInput">
+              <option value="" selected disabled>Choose a category</option>
+              <!-- The 7 categories are added by JavaScript from the categories list -->
+            </select>
+          </div>
+          <div class="field">
+            <label for="costInput">Cost</label>
+            <div class="cost-input">
+              <span>$</span>
+              <input id="costInput" type="text" inputmode="decimal" placeholder="24.99" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="billingInput">Billing Frequency</label>
+            <select id="billingInput">
+              <option value="" selected disabled>Choose billing</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Yearly">Yearly</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-footer">
+          <div id="formError" class="form-error" role="alert" hidden></div>
+          <div class="form-actions">
+            <button type="button" id="cancelFormButton" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add Subscription</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Subscription list (Python: view_subscriptions) -->
+      <div id="subscriptionTable" class="table-wrap">
+        <table class="sub-table">
+          <thead>
+            <tr>
+              <th>Subscription</th>
+              <th>Billing</th>
+              <th class="num">Monthly</th>
+              <th class="num">Annual</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="subscriptionRows"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="num money" id="tableMonthlyTotal">$0.00</td>
+              <td class="num money" id="tableYearlyTotal">$0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div id="subscriptionEmpty" class="empty-state" hidden>
+        <strong>No subscriptions added yet.</strong>
+        Add your first subscription to start tracking your recurring expenses.
+        <div><button type="button" id="emptyAddButton" class="btn btn-primary">+ Add Subscription</button></div>
+      </div>
+    </section>
+
+    <!-- ===================== SPENDING BY CATEGORY ===================== -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Monthly Spending by Category</h2>
+          <p>Monthly equivalent cost in each category.</p>
+        </div>
+      </div>
+      <div id="categoryBars" class="category-list"></div>
+      <div id="categoryEmpty" class="empty-small" hidden>
+        Category spending will appear here once you add a subscription.
+      </div>
+      <div id="largestSubscription" class="largest"></div>
+    </section>
+
+  </div>
+
+  <!-- ===================== SAVINGS CALCULATOR ===================== -->
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2>What if I cancel?</h2>
+        <p>Choose a subscription to see what cancelling it would save. Nothing is removed.</p>
+      </div>
+    </div>
+
+    <div id="savingsEmpty" class="empty-state" hidden>
+      <strong>No subscriptions to compare yet.</strong>
+      Add a subscription first to see how much you could save by cancelling it.
+    </div>
+
+    <div id="savingsContent" class="savings-body">
+      <div class="field">
+        <label for="savingsSelect">Select Subscription</label>
+        <select id="savingsSelect"></select>
+        <p id="savingsNote" class="savings-note"></p>
+      </div>
+      <div class="savings-tiles">
+        <div class="savings-tile">
+          <div class="savings-label">Monthly Savings</div>
+          <div class="savings-value" id="monthlySavings">$0.00</div>
+          <div class="savings-period">per month</div>
+        </div>
+        <div class="savings-tile">
+          <div class="savings-label">Annual Savings</div>
+          <div class="savings-value" id="yearlySavings">$0.00</div>
+          <div class="savings-period">per year</div>
+        </div>
+        <div class="savings-tile highlight">
+          <div class="savings-label">3-Year Savings</div>
+          <div class="savings-value" id="threeYearSavings">$0.00</div>
+          <div class="savings-period">over 3 years</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="app-footer">Subscription Tracker</footer>
+</div>
+
+<!-- Small pop-up message, like the print() confirmations in the Python version -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+// =====================================================
+// Subscription Tracker (web version)
+// This JavaScript follows the same logic as the Python program.
+// =====================================================
+
+
+// ---------- 1. DATA ----------
+
+// Same 7 categories as choose_category() in Python
+const categories = [
+  "Entertainment",
+  "Fitness",
+  "Software",
+  "Gaming",
+  "Shopping",
+  "Education",
+  "Other"
+];
+
+// Example subscriptions loaded when the page opens (and by Reset Demo)
+const demoSubscriptions = [
+  { name: "Netflix",        category: "Entertainment", cost: 24.99,  billing: "Monthly" },
+  { name: "Spotify",        category: "Entertainment", cost: 11.99,  billing: "Monthly" },
+  { name: "Amazon Prime",   category: "Shopping",      cost: 139.00, billing: "Yearly"  },
+  { name: "Gym Membership", category: "Fitness",       cost: 45.00,  billing: "Monthly" },
+  { name: "iCloud",         category: "Software",      cost: 2.99,   billing: "Monthly" }
+];
+
+// This list stores all of the user's subscriptions (Python: subscriptions = [])
+let subscriptions = [];
+
+// The subscription currently chosen in "What if I cancel?"
+let savingsSelection = null;
+
+
+// ---------- 2. PAGE ELEMENTS ----------
+
+const addForm = document.getElementById("addForm");
+const toggleFormButton = document.getElementById("toggleFormButton");
+const nameInput = document.getElementById("nameInput");
+const categoryInput = document.getElementById("categoryInput");
+const costInput = document.getElementById("costInput");
+const billingInput = document.getElementById("billingInput");
+const formError = document.getElementById("formError");
+const savingsSelect = document.getElementById("savingsSelect");
+
+
+// ---------- 3. HELPER FUNCTIONS ----------
+
+// Formats a number as currency with 2 decimals, e.g. 1158.64 -> "$1,158.64"
+function formatMoney(amount) {
+  return "$" + amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+// Makes user-typed text safe to show on the page
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Shows a short message at the bottom of the screen
+let toastTimer = null;
+function showMessage(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () {
+    toast.classList.remove("show");
+  }, 2800);
+}
+
+// Fills the Category dropdown using a for loop (like choose_category)
+function fillCategoryDropdown() {
+  for (let i = 0; i < categories.length; i++) {
+    const option = document.createElement("option");
+    option.value = categories[i];
+    option.textContent = categories[i];
+    categoryInput.appendChild(option);
+  }
+}
+
+
+// ---------- 4. MONTHLY / YEARLY CONVERSION ----------
+// Same logic as the conversion inside add_subscription() in Python.
+// The object uses the exact same keys as the Python dictionary.
+function createSubscription(name, category, cost, billing) {
+  let monthly_cost;
+  let yearly_cost;
+
+  if (billing === "Monthly") {
+    monthly_cost = cost;
+    yearly_cost = cost * 12;
+  } else {
+    yearly_cost = cost;
+    monthly_cost = cost / 12;
+  }
+
+  return {
+    name: name,
+    category: category,
+    cost: cost,
+    billing: billing,
+    monthly_cost: monthly_cost,
+    yearly_cost: yearly_cost
+  };
+}
+
+
+// ---------- 5. INPUT VALIDATION ----------
+
+// Checks the cost the same way as get_positive_cost() in Python.
+// Returns an error message, or "" if the cost is valid.
+function getCostError(costText) {
+  if (costText === "") {
+    return "Please enter the subscription cost.";
+  }
+
+  if (costText.startsWith("-")) {
+    return "Cost must be greater than $0.";
+  }
+
+  // Allows one decimal point in the number (same trick as Python's replace)
+  const costCheck = costText.replace(".", "");
+
+  // Python: cost_check.isdigit()
+  if (!/^[0-9]+$/.test(costCheck)) {
+    return "Invalid input. Please enter a number.";
+  }
+
+  if (parseFloat(costText) <= 0) {
+    return "Cost must be greater than $0.";
+  }
+
+  return "";
+}
+
+// Shows an error message next to the form and highlights the field
+function showFormError(field, message) {
+  field.classList.add("invalid");
+  formError.textContent = message;
+  formError.hidden = false;
+  field.focus();
+}
+
+// Removes all error messages and highlights
+function clearFormErrors() {
+  formError.hidden = true;
+  formError.textContent = "";
+  const fields = [nameInput, categoryInput, costInput, billingInput];
+  for (let i = 0; i < fields.length; i++) {
+    fields[i].classList.remove("invalid");
+  }
+}
+
+
+// ---------- 6. ADD SUBSCRIPTION (Python: add_subscription) ----------
+function addSubscription(event) {
+  event.preventDefault(); // stops the page from reloading
+  clearFormErrors();
+
+  // Get the inputs
+  const name = nameInput.value.trim();
+  const category = categoryInput.value;
+  const costText = costInput.value.trim();
+  const billing = billingInput.value;
+
+  // Validate each input in the same order as the Python program
+  if (name === "") {
+    showFormError(nameInput, "Subscription name cannot be empty.");
+    return;
+  }
+
+  if (category === "") {
+    showFormError(categoryInput, "Please choose a category.");
+    return;
+  }
+
+  const costError = getCostError(costText);
+  if (costError !== "") {
+    showFormError(costInput, costError);
+    return;
+  }
+
+  if (billing === "") {
+    showFormError(billingInput, "Please choose a billing frequency.");
+    return;
+  }
+
+  // Everything is valid: convert and add to the list
+  const cost = parseFloat(costText);
+  const subscription = createSubscription(name, category, cost, billing);
+  subscriptions.push(subscription); // Python: subscriptions.append(subscription)
+
+  addForm.reset();
+  updateDashboard();
+
+  showMessage(
+    name + " added. Monthly cost: " + formatMoney(subscription.monthly_cost) +
+    ", yearly cost: " + formatMoney(subscription.yearly_cost)
+  );
+  nameInput.focus();
+}
+
+
+// ---------- 7. VIEW SUBSCRIPTIONS (Python: view_subscriptions) ----------
+function viewSubscriptions() {
+  const table = document.getElementById("subscriptionTable");
+  const emptyState = document.getElementById("subscriptionEmpty");
+  const rows = document.getElementById("subscriptionRows");
+
+  if (subscriptions.length === 0) {
+    table.hidden = true;
+    emptyState.hidden = false;
+    rows.innerHTML = "";
+    return;
+  }
+
+  table.hidden = false;
+  emptyState.hidden = true;
+
+  let rowsHtml = "";
+
+  for (let i = 0; i < subscriptions.length; i++) {
+    const subscription = subscriptions[i];
+
+    let billedText;
+    if (subscription.billing === "Monthly") {
+      billedText = formatMoney(subscription.cost) + " per month";
+    } else {
+      billedText = formatMoney(subscription.cost) + " per year";
+    }
+
+    rowsHtml +=
+      "<tr>" +
+        "<td>" +
+          '<div class="sub-name">' + escapeHtml(subscription.name) + "</div>" +
+          '<span class="tag">' + subscription.category + "</span>" +
+        "</td>" +
+        "<td>" +
+          '<div class="billing-type">' + subscription.billing + "</div>" +
+          '<div class="small-muted money">' + billedText + "</div>" +
+        "</td>" +
+        '<td class="num"><span class="amount">' + formatMoney(subscription.monthly_cost) +
+          '</span> <span class="per">/ month</span></td>' +
+        '<td class="num"><span class="amount">' + formatMoney(subscription.yearly_cost) +
+          '</span> <span class="per">/ year</span></td>' +
+        "<td>" +
+          '<button type="button" class="btn btn-remove" data-index="' + i + '" ' +
+          'aria-label="Remove ' + escapeHtml(subscription.name) + '">Remove</button>' +
+        "</td>" +
+      "</tr>";
+  }
+
+  rows.innerHTML = rowsHtml;
+}
+
+
+// ---------- 8. SPENDING SUMMARY (Python: show_summary) ----------
+function showSummary() {
+  let monthly_total = 0;
+  let yearly_total = 0;
+
+  // Dictionary used to track spending by category
+  const category_totals = {
+    "Entertainment": 0,
+    "Fitness": 0,
+    "Software": 0,
+    "Gaming": 0,
+    "Shopping": 0,
+    "Education": 0,
+    "Other": 0
+  };
+
+  let largest_name = "";
+  let largest_monthly_cost = 0;
+
+  // Go through every subscription (running totals)
+  for (const subscription of subscriptions) {
+    monthly_total = monthly_total + subscription.monthly_cost;
+    yearly_total = yearly_total + subscription.yearly_cost;
+
+    const category = subscription.category;
+    category_totals[category] = category_totals[category] + subscription.monthly_cost;
+
+    // Find largest monthly subscription
+    if (subscription.monthly_cost > largest_monthly_cost) {
+      largest_monthly_cost = subscription.monthly_cost;
+      largest_name = subscription.name;
+    }
+  }
+
+  // Dashboard numbers
+  document.getElementById("monthlyTotal").textContent = formatMoney(monthly_total);
+  document.getElementById("yearlyTotal").textContent = formatMoney(yearly_total);
+  document.getElementById("activeCount").textContent = subscriptions.length;
+
+  // Totals row at the bottom of the table
+  document.getElementById("tableMonthlyTotal").textContent = formatMoney(monthly_total);
+  document.getElementById("tableYearlyTotal").textContent = formatMoney(yearly_total);
+
+  // Category bars
+  showCategoryBars(category_totals);
+
+  // Largest subscription
+  const largestBox = document.getElementById("largestSubscription");
+  if (subscriptions.length === 0) {
+    largestBox.hidden = true;
+  } else {
+    largestBox.hidden = false;
+    largestBox.innerHTML =
+      "Largest subscription: <strong>" + escapeHtml(largest_name) + "</strong>, " +
+      formatMoney(largest_monthly_cost) + " per month";
+  }
+}
+
+// Draws one horizontal bar per category that has spending
+function showCategoryBars(category_totals) {
+  const barsBox = document.getElementById("categoryBars");
+  const emptyBox = document.getElementById("categoryEmpty");
+
+  if (subscriptions.length === 0) {
+    barsBox.innerHTML = "";
+    emptyBox.hidden = false;
+    return;
+  }
+
+  emptyBox.hidden = true;
+
+  // Find the biggest category so the longest bar fills the full width
+  let biggestCategoryTotal = 0;
+  for (const category in category_totals) {
+    if (category_totals[category] > biggestCategoryTotal) {
+      biggestCategoryTotal = category_totals[category];
+    }
+  }
+
+  let barsHtml = "";
+
+  for (const category in category_totals) {
+    // Only show categories that have subscriptions (same as Python)
+    if (category_totals[category] > 0) {
+      const barWidth = (category_totals[category] / biggestCategoryTotal) * 100;
+
+      barsHtml +=
+        '<div class="category-row">' +
+          '<div class="category-top">' +
+            '<span class="category-name">' + category + "</span>" +
+            '<span class="category-amount money">' + formatMoney(category_totals[category]) + "</span>" +
+          "</div>" +
+          '<div class="bar-track"><div class="bar-fill" style="width: ' + barWidth + '%"></div></div>' +
+        "</div>";
+    }
+  }
+
+  barsBox.innerHTML = barsHtml;
+}
+
+
+// ---------- 9. SAVINGS CALCULATOR (Python: savings_calculator) ----------
+
+// Rebuilds the dropdown list of subscriptions
+function updateSavingsDropdown() {
+  const savingsEmpty = document.getElementById("savingsEmpty");
+  const savingsContent = document.getElementById("savingsContent");
+
+  if (subscriptions.length === 0) {
+    savingsSelect.innerHTML = "";
+    savingsSelection = null;
+    savingsEmpty.hidden = false;
+    savingsContent.hidden = true;
+    return;
+  }
+
+  savingsEmpty.hidden = true;
+  savingsContent.hidden = false;
+
+  // Keep the same subscription selected if it still exists, otherwise pick the first one
+  let selectedIndex = subscriptions.indexOf(savingsSelection);
+  if (selectedIndex === -1) {
+    selectedIndex = 0;
+  }
+
+  let optionsHtml = "";
+  for (let i = 0; i < subscriptions.length; i++) {
+    const subscription = subscriptions[i];
+    optionsHtml +=
+      '<option value="' + i + '">' +
+      escapeHtml(subscription.name) + " (" + formatMoney(subscription.monthly_cost) + "/month)" +
+      "</option>";
+  }
+
+  savingsSelect.innerHTML = optionsHtml;
+  savingsSelect.value = String(selectedIndex);
+
+  calculateSavings();
+}
+
+// Calculates what the user would save by cancelling the chosen subscription
+function calculateSavings() {
+  if (subscriptions.length === 0) {
+    return;
+  }
+
+  const choice = parseInt(savingsSelect.value);
+  const selected = subscriptions[choice];
+  savingsSelection = selected;
+
+  const monthly_savings = selected.monthly_cost;
+  const yearly_savings = selected.yearly_cost;
+  const three_year_savings = yearly_savings * 3;
+
+  document.getElementById("monthlySavings").textContent = formatMoney(monthly_savings);
+  document.getElementById("yearlySavings").textContent = formatMoney(yearly_savings);
+  document.getElementById("threeYearSavings").textContent = formatMoney(three_year_savings);
+
+  document.getElementById("savingsNote").textContent =
+    "If you cancel " + selected.name + ", this is the money you would keep.";
+}
+
+
+// ---------- 10. REMOVE SUBSCRIPTION (Python: remove_subscription) ----------
+function removeSubscription(index) {
+  // Python: removed_subscription = subscriptions.pop(choice - 1)
+  const removed_subscription = subscriptions.splice(index, 1)[0];
+
+  updateDashboard();
+  showMessage(removed_subscription.name + " has been removed.");
+}
+
+
+// ---------- 11. UPDATE EVERYTHING ----------
+// Called after every add, remove or reset so all sections stay correct
+function updateDashboard() {
+  viewSubscriptions();
+  showSummary();
+  updateSavingsDropdown();
+}
+
+
+// ---------- 12. FORM OPEN / CLOSE ----------
+function toggleAddForm() {
+  if (addForm.hidden) {
+    openAddForm();
+  } else {
+    closeAddForm();
+  }
+}
+
+function openAddForm() {
+  addForm.hidden = false;
+  toggleFormButton.setAttribute("aria-expanded", "true");
+  nameInput.focus();
+}
+
+function closeAddForm() {
+  addForm.reset();
+  clearFormErrors();
+  addForm.hidden = true;
+  toggleFormButton.setAttribute("aria-expanded", "false");
+}
+
+// Clear an error as soon as the user starts fixing the field
+const formFields = [nameInput, categoryInput, costInput, billingInput];
+for (let i = 0; i < formFields.length; i++) {
+  formFields[i].addEventListener("input", clearFormErrors);
+  formFields[i].addEventListener("change", clearFormErrors);
+}
+
+
+// ---------- 13. DEMO DATA ----------
+function loadDemoData() {
+  subscriptions = [];
+  for (const demo of demoSubscriptions) {
+    subscriptions.push(createSubscription(demo.name, demo.category, demo.cost, demo.billing));
+  }
+  savingsSelection = null;
+}
+
+function resetDemo() {
+  loadDemoData();
+  closeAddForm();
+  updateDashboard();
+  showMessage("Demo subscriptions restored.");
+}
+
+
+// ---------- 14. CONNECT THE BUTTONS ----------
+document.getElementById("resetDemoButton").addEventListener("click", resetDemo);
+toggleFormButton.addEventListener("click", toggleAddForm);
+document.getElementById("cancelFormButton").addEventListener("click", closeAddForm);
+document.getElementById("emptyAddButton").addEventListener("click", openAddForm);
+addForm.addEventListener("submit", addSubscription);
+savingsSelect.addEventListener("change", calculateSavings);
+
+// Each Remove button stores its position in the list (data-index)
+document.getElementById("subscriptionRows").addEventListener("click", function (event) {
+  const button = event.target.closest(".btn-remove");
+  if (button) {
+    removeSubscription(parseInt(button.dataset.index));
+  }
+});
+
+
+// ---------- 15. START THE APP (Python: main) ----------
+fillCategoryDropdown();
+loadDemoData();
+updateDashboard();
+</script>
+
+</body>
+</html>
